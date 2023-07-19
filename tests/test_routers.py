@@ -21,14 +21,14 @@ app.include_router(middleware_testing_router)
 @pytest.mark.asyncio
 @pytest.mark.database
 async def test_get_list(session):
-    async with session.begin():
-        session.add_all(
-            [
-                T1(name="omega", character="Ω"),
-                T1(name="alpha", character="Α"),
-                T1(name="nu", character="Ν"),
-            ]
-        )
+    session.add_all(
+        [
+            T1(name="omega", character="Ω"),
+            T1(name="alpha", character="Α"),
+            T1(name="nu", character="Ν"),
+        ]
+    )
+    await session.commit()
 
     async with AsyncClient(app=app, base_url="http://example.com") as ac:
         response = await ac.get("/db-integration/")
@@ -44,12 +44,12 @@ async def test_get_list(session):
 @pytest.mark.asyncio
 @pytest.mark.database
 async def test_get_detail(session):
-    async with session.begin():
-        session.add_all(
-            [
-                T1(name="delta", character="Δ"),
-            ]
-        )
+    session.add_all(
+        [
+            T1(name="delta", character="Δ"),
+        ]
+    )
+    await session.commit()
 
     async with AsyncClient(app=app, base_url="http://example.com") as ac:
         response = await ac.get("/db-integration/delta/")
@@ -65,9 +65,9 @@ async def test_get_detail(session):
 @pytest.mark.database
 async def test_get_detail_for_nonexistant(session):
     async with AsyncClient(app=app, base_url="http://example.com") as ac:
-        response = await ac.get("/db-integration/kappa/")
+        response = await ac.get("/db-integration/delta/")
 
     assert response.json() == {
-        "detail": "kappa not found",
+        "detail": "delta not found",
     }
     assert response.status_code == 404

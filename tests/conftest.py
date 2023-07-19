@@ -79,12 +79,25 @@ async def session():
 
     transactional_session = AsyncSession(
         bind=connection,
+        expire_on_commit=False,
         join_transaction_mode="create_savepoint",
     )
 
+    # Adapted from
+    # https://www.core27.co/post/transactional-unit-tests-with-pytest-and-async-sqlalchemy
+    # https://gist.github.com/sidravic/785376313cbcfface398b9bc14ad6eac#file-db-py
+    nested = await connection.begin_nested()
+
+    @event.listens_for(transactional_session.sync_session, "after_transaction_end")
+    def end_savepoint(session, transaction):
+        nonlocal nested
+
+        if not nested.is_active:
+            nested = connection.sync_connection.begin_nested()
+
     async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
         transactional_session_maker = async_sessionmaker(
-            bind=engine,
+            bind=connection,
             expire_on_commit=False,
             join_transaction_mode="create_savepoint",
         )
